@@ -1,0 +1,15 @@
+{
+	"data_dir": "/var/lib/consul",
+	"ui_dir": "/var/www/dist",
+	"client_addr": "0.0.0.0",
+	"recursors": ["8.8.8.8", "8.8.4.4"],
+  "dns_config": {
+    "allow_stale": true
+  },
+  "ports": {
+    "dns": 53
+  },
+  "http_api_response_headers": {
+    "Access-Control-Allow-Origin": "*"
+  }
+}

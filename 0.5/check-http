@@ -1,0 +1,22 @@
+#!/bin/bash
+
+readonly IMAGE="krmcbride/curl"
+
+main() {
+    local container_id="$1"; shift
+    local port="$1"; shift
+    local path="$1"; shift
+    local opts="$@"
+    
+    local ip="$(docker inspect -f "{{.NetworkSettings.IPAddress}}" $container_id)"
+    local curl_cmd="-isSf --retry 2 $opts http://$ip:$port$path"
+    local check_id="chk-$(cat /proc/sys/kernel/random/uuid)"
+
+    docker run --name $check_id --net container:$container_id $IMAGE $curl_cmd > /dev/stdout 2>&1
+    local code=$?
+    docker rm -f $check_id >/dev/null 2>&1 || true
+
+    exit $code
+}
+
+main $@

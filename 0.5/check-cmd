@@ -1,0 +1,19 @@
+#!/bin/bash
+
+main() {
+    local container_id="$1"; shift
+    local port="$1"; shift
+    local cmd="$@"
+
+    local image="$(docker inspect -f "{{.Config.Image}}" $container_id)"
+    local ip="$(docker inspect -f "{{.NetworkSettings.IPAddress}}" $container_id)"
+    local check_id="chk-$(cat /proc/sys/kernel/random/uuid)"
+    
+    docker run --name $check_id --net container:$container_id -e "SERVICE_ADDR=$ip:$port" $image "$cmd"
+    local code=$?
+    docker rm -f $check_id >/dev/null 2>&1 || true
+
+    exit $code
+}
+
+main $@

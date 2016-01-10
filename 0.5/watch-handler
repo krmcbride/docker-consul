@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+import sys, os, json, httplib
+
+"""
+Script for forwarding Consul watch data to an HTTP endpoint.
+
+Arguments:
+    watch_type: The watch type ('event', 'checks', etc).
+    hostname: The host to forward data to (127.0.0.1:1234).
+    path: The path to POST to
+
+The check JSON data should be passed via stdin.
+
+Example:
+    echo -n '{"hi":"foo"}' | CONSUL_INDEX=42 ./watch-handler check requestb.in /1enakj31
+
+To use this script with Consul use configuration like the following:
+
+{
+  "watches":[
+    {
+      "type": "event",
+      "handler": "watch-handler event 192.168.3.18 /consul"
+    },
+    {
+      "type": "checks",
+      "handler": "watch-handler checks 192.168.3.18 /consul"
+    }
+  ]
+}
+
+The JSON data POSTed to the configured endpoint is an envelope consisting of the watch type and watch data:
+
+    {
+        "type": "checks",
+        "data": {},
+        "index": 42
+    }
+
+The index is set with the value of the CONSUL_INDEX environment variable.
+
+See https://www.consul.io/docs/agent/watches.html for more information.
+"""
+
+consul_index = int(os.getenv('CONSUL_INDEX', 0))
+consul_in = json.loads(sys.stdin.readlines()[0])
+
+watch_type = sys.argv[1]
+hostname = sys.argv[2]
+path = sys.argv[3]
+
+headers = {'Content-Type': 'application/json'}
+payload = {'type': watch_type, 'data': consul_in, 'index': consul_index}
+
+conn = httplib.HTTPConnection(hostname)
+conn.request('POST', path, json.dumps(payload), headers)
+response = conn.getresponse()
+conn.close()
+
+print(response.status, response.reason)
